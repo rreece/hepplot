@@ -46,6 +46,7 @@ def hist1d(bins,
            ylabel=None,
            unit=None,
            ratio=False,
+           ratio_label=None,
            stack_signals=True,
            ):
 
@@ -65,7 +66,7 @@ def hist1d(bins,
                 labels = labels.copy()
                 labels.reverse()
         else:
-            assert n_bins == len(y)
+            assert n_bins == len(y), "%i, %i" % (n_bins, len(y))
             n_samples = 1
             # if y one sample, and not a list of samples, make it one
             y = [y]
@@ -127,8 +128,8 @@ def hist1d(bins,
         else:
             _data_err = np.zeros((n_bins, 2), dtype=np.float32)
             for j_bin in range(n_bins):
-                _data_err[j_bin][0] = _data_err[j_bin]
-                _data_err[j_bin][1] = _data_err[j_bin]
+                _data_err[j_bin][0] = data_err[j_bin]
+                _data_err[j_bin][1] = data_err[j_bin]
             data_err = _data_err
 
     ## convert yerr from [bin][up,down] to [down,up][bin]
@@ -156,15 +157,14 @@ def hist1d(bins,
 
     ## make top subplot
     fig = plt.figure()
-    axes = list()
     if (data is not None) and ratio:
         gs = fig.add_gridspec(2, 1, height_ratios=(3, 1),
                               wspace=0, hspace=0.04)
         ax1 = fig.add_subplot(gs[0, 0])
-        axes.append(ax1)
     else:
         fig, ax1 = plt.subplots()
-        axes.append(ax1)
+    axes = list()
+    axes.append(ax1)
 
     bincenters = np.mean(np.vstack([bins[0:-1],bins[1:]]), axis=0)
     binwidths = np.asarray([bins[i+1]-bins[i] for i in range(n_bins)], dtype=np.float32)
@@ -346,7 +346,8 @@ def hist1d(bins,
             )
         
         ## axis labels
-        ax2.set_ylabel('Data / Model')
+        if ratio_label:
+            ax2.set_ylabel(ratio_label)
         #ax2.set_ylim(0.7, 1.3) # HACK
         _label = ''
         if xlabel:
@@ -357,7 +358,7 @@ def hist1d(bins,
     
         fig.subplots_adjust(wspace=0, hspace=0)
 
-    return fig, [ax1, ax2]
+    return fig, axes
 
 
 def make_error_boxes(ax, xdata, ydata, xerror, yerror,
