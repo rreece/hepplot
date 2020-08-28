@@ -27,7 +27,7 @@ from matplotlib.patches import Patch
 from . import stat
 
 
-matplotlib.rc('text', usetex = True)
+#matplotlib.rc('text', usetex = True)
 #plt.style.use(hep.style.ATLAS)
 plt.style.use([hep.style.CMS, hep.style.firamath])
 
@@ -48,6 +48,8 @@ def hist1d(bins,
            ratio=False,
            ratio_label=None,
            stack_signals=True,
+           xlim=None,
+           ylim=None,
            ):
 
     assert not ((yerr is not None) and (yerrs is not None))
@@ -240,7 +242,13 @@ def hist1d(bins,
             markersize=8,
             zorder=100,
             )
-    
+
+    ## axis limits
+    if xlim is not None:
+        ax1.set_xlim(*xlim)
+    if ylim is not None:
+        ax1.set_ylim(*ylim)
+
     ## axis labels
     _label = ''
     if ylabel:
@@ -355,7 +363,7 @@ def hist1d(bins,
             if unit:
                 _label += ' [%s]' % (unit)
             plt.xlabel(_label)
-    
+
         fig.subplots_adjust(wspace=0, hspace=0)
 
     return fig, axes
@@ -395,6 +403,162 @@ def make_error_boxes(ax, xdata, ydata, xerror, yerror,
     ax.add_collection(pc)
 
     return pc
+
+
+def make_heatmap(data, 
+                 xlabel=None,
+                 ylabel=None,
+                 xlabels=None,
+                 ylabels=None,
+                 cbar=False,
+                 cbar_kw=None, 
+                 cbar_label="",
+                 cbar_range=None,
+                 annotate=False, 
+                 figsize=None, 
+                 imshow=False,
+                 threshold=None,
+                 **kwargs):
+    """
+    Create a heatmap from a numpy array and two lists of labels.
+    Arguments:
+        data       : A 2D numpy array of shape (N,M)
+    Optional arguments:
+        xlabels    : A list or array of length M with the labels
+                     for the columns
+        ylabels    : A list or array of length N with the labels
+                     for the rows
+        cbar_kw    : A dictionary with arguments to
+                     :meth:`matplotlib.Figure.colorbar`.
+        cbar_label  : The label for the colorbar
+    All other arguments are directly passed on to the imshow call.
+    
+    From: https://matplotlib.org/gallery/images_contours_and_fields/image_annotated_heatmap.html
+    """
+    if figsize is None:
+        figsize = (12, 12)
+    
+    if cbar_kw is None:
+        cbar_kw = dict()
+    
+    if xlabels or ylabels:
+        imshow = True
+    
+    fig, ax = plt.subplots(figsize=figsize)
+
+    # Plot the heatmap
+    if imshow:
+        im = ax.imshow(data, **kwargs)
+    else:
+        im = ax.pcolormesh(data, **kwargs)
+
+    if cbar: # Create colorbar
+        cbar = fig.colorbar(im, ax=ax, **cbar_kw)
+        if cbar_range:
+            im.set_clim(*cbar_range)
+        if cbar_label:
+            cbar.ax.set_ylabel(cbar_label, rotation=-90, va="bottom", fontsize=16)
+
+    if ylabels:
+        # We want to show all ticks...
+        ax.set_xticks(np.arange(data.shape[1]))
+        # ... and label them with the respective list entries.
+        ax.set_xticklabels(ylabels, fontsize=14)
+    
+    if xlabels:
+        ax.set_yticks(np.arange(data.shape[0]))
+        ax.set_yticklabels(xlabels, fontsize=14)
+
+    if xlabels:
+        # Let the horizontal axes labeling appear on top.
+        ax.tick_params(top=True, bottom=False,
+                   labeltop=True, labelbottom=False)
+
+        # Rotate the tick labels and set their alignment.
+        plt.setp(ax.get_xticklabels(), rotation=-45, ha="right",
+             rotation_mode="anchor")
+
+        # Turn spines off and create white grid.
+        for edge, spine in ax.spines.items():
+            spine.set_visible(False)
+
+        ax.set_xticks(np.arange(data.shape[1]+1)-.5, minor=True)
+        ax.set_yticks(np.arange(data.shape[0]+1)-.5, minor=True)
+        ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
+        ax.tick_params(which="minor", bottom=False, left=False)
+        
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=16)
+        
+    if ylabel:
+        ax.set_ylabel(ylabel, fontsize=16)
+
+    if annotate:
+#        texts = annotate_heatmap(im, data, valfmt="{x:.0f}", fontsize=14,  threshold=0.30)
+        texts = annotate_heatmap(im, data, valfmt="{x:.0f}", fontsize=14, threshold=threshold)
+
+    ax.tick_params(axis=u'both', which=u'both', length=0)
+    
+    fig.tight_layout()
+    
+    return fig, ax
+
+
+
+def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
+                     textcolors=["black", "white"],
+                     threshold=None, **textkw):
+    """
+    A function to annotate a heatmap.
+    Arguments:
+        im         : The AxesImage to be labeled.
+    Optional arguments:
+        data       : Data used to annotate. If None, the image's data is used.
+        valfmt     : The format of the annotations inside the heatmap.
+                     This should either use the string format method, e.g.
+                     "$ {x:.2f}", or be a :class:`matplotlib.ticker.Formatter`.
+        textcolors : A list or array of two color specifications. The first is
+                     used for values below a threshold, the second for those
+                     above.
+        threshold  : Value in data units according to which the colors from
+                     textcolors are applied. If None (the default) uses the
+                     middle of the colormap as separation.
+    Further arguments are passed on to the created text labels.
+    """
+    
+    shift = 0.0 # 0.5 # HACK
+
+    if not isinstance(data, (list, np.ndarray)):
+        data = im.get_array()
+
+    # Normalize the threshold to the images color range.
+    if threshold is not None:
+        threshold = im.norm(threshold)
+    else:
+        threshold = im.norm(data.max())/2.
+
+    # Set default alignment to center, but allow it to be
+    # overwritten by textkw.
+    kw = dict(horizontalalignment="center",
+              verticalalignment="center")
+    kw.update(textkw)
+
+    # Get the formatter in case a string is supplied
+    if isinstance(valfmt, str):
+        valfmt = matplotlib.ticker.StrMethodFormatter(valfmt)
+
+    # Loop over the data and create a `Text` for each "pixel".
+    # Change the text's color depending on the data.
+    texts = []
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            _n = im.norm(data[i, j])
+#            kw.update(color=textcolors[_n > threshold and _n < 0.95]) # HACK
+            kw.update(color=textcolors[_n >= threshold])
+            text = im.axes.text(j+shift, i+shift, valfmt(int(round(data[i, j])), None), **kw) # HACK
+            texts.append(text)
+
+    return texts
 
 
 def plot_brazil(x, exp, obs,
