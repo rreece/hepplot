@@ -1,5 +1,5 @@
 """
-hepplot/stat.py
+hepplot/stats.py
 
 See:
 https://en.wikipedia.org/wiki/Poisson_distribution#Confidence_interval
@@ -11,6 +11,7 @@ https://www.johndcook.com/blog/wilson_hilferty/
 import math
 import numpy as np
 import pyhf
+import scipy.stats
 
 
 def poisson_error_up(data):
@@ -85,3 +86,16 @@ def invert_interval(hypo_tests, test_mus, test_size=0.05):
         test_size, list(reversed(cls_obs)), list(reversed(test_mus))
     )
     return crossing_test_stats
+
+
+def clopper_pearson(k, n, cl):
+    """
+    https://gist.github.com/DavidWalz/8538435
+    http://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
+    alpha confidence intervals for a binomial distribution of k expected successes on n trials
+    Clopper Pearson intervals are a conservative estimate.
+    """
+    alpha = 1 - cl
+    lo = scipy.stats.beta.ppf(alpha/2, k, n-k+1)
+    hi = scipy.stats.beta.ppf(1 - alpha/2, k+1, n-k)
+    return lo, hi
