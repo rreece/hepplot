@@ -46,9 +46,11 @@ def hist1d(bins,
            data_label=None,
            signals=None,
            signal_labels=None,
+           signal_colors=None,
            xlabel=None,
            ylabel=None,
            ycolors=None,
+           yalpha=None,
            xlabels=None,
            stacked=True,
            xminorticks=True,
@@ -62,6 +64,7 @@ def hist1d(bins,
            data_color='black',
            figsize=None,
            fontsize=None,
+           xlabels_fontsize=None,
            ):
 
     assert not ((yerr is not None) and (yerrs is not None))
@@ -212,17 +215,32 @@ def hist1d(bins,
             color=colors,
             label=labels,
             histtype=histtype,
-            linewidth=2,
-#            linecolor='black',
+#            linewidth=2,
+#            linecolor=colors,
+            alpha=yalpha,
             )
 
-    # TODO
-    signal_colors = ['orange', 'cyan', 'lime', 'magenta']
+        if yalpha:
+            plt.hist(binned, bins,
+                weights=y,
+                stacked=False,
+                density=False,
+#                label=labels,
+                color=colors,
+                histtype='step',
+                linewidth=2,
+                fill=False,
+                )
+
+    if signal_colors is None:
+        signal_colors = ['orange', 'cyan', 'lime', 'magenta']
 
     ## plot signals
     n_signals = 0
     if signals is not None:
         n_signals = len(signals)
+        signal_colors = signal_colors[:n_signals] if signal_colors else None
+        signal_labels = signal_labels[:n_signals] if signal_labels else None
         if stack_signals: # stack signals on top of ytotal
             for i_sig in range(n_signals):
                 for j_bin in range(n_bins):
@@ -232,8 +250,8 @@ def hist1d(bins,
             weights=signals,
             stacked=False,
             density=False,
-            label=signal_labels[:n_signals],
-            color=signal_colors[:n_signals],
+            label=signal_labels,
+            color=signal_colors,
             histtype='step',
             linewidth=2,
             fill=False,
@@ -298,7 +316,7 @@ def hist1d(bins,
         # We want to show all ticks...
         ax1.set_xticks(np.arange(n_bins))
         # ... and label them with the respective list entries.
-        ax1.set_xticklabels(xlabels, fontsize=fontsize)
+        ax1.set_xticklabels(xlabels, fontsize=xlabels_fontsize)
         # Rotate the tick labels and set their alignment.
         plt.setp(ax1.get_xticklabels(), rotation=45, ha="right",
              rotation_mode="anchor")
