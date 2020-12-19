@@ -630,7 +630,7 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
     return texts
 
 
-def plot_brazil(x, exp, obs,
+def brazil(x, exp, obs,
                 xlabel=None,
                 ylabel=None,
                 xlim=None,
