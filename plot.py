@@ -480,6 +480,7 @@ def make_heatmap(data,
                  ylabel=None,
                  xlabels=None,
                  ylabels=None,
+                 xlabels_rotation=0,
                  cbar=False,
                  cbar_kw=None, 
                  cbar_label="",
@@ -522,10 +523,11 @@ def make_heatmap(data,
     else:
         im = ax.pcolormesh(data, **kwargs)
 
+    if cbar_range:
+        im.set_clim(*cbar_range)
+
     if cbar: # Create colorbar
         cbar = fig.colorbar(im, ax=ax, **cbar_kw)
-        if cbar_range:
-            im.set_clim(*cbar_range)
         if cbar_label:
             cbar.ax.set_ylabel(cbar_label, rotation=-90, va="bottom", fontsize=16)
 
@@ -544,9 +546,10 @@ def make_heatmap(data,
         ax.tick_params(top=True, bottom=False,
                    labeltop=True, labelbottom=False)
 
-        # Rotate the tick labels and set their alignment.
-        plt.setp(ax.get_xticklabels(), rotation=-45, ha="right",
-             rotation_mode="anchor")
+        # Rotate the tick labels and set their alignment. (-45)
+        if xlabels_rotation:
+            plt.setp(ax.get_xticklabels(), rotation=xlabels_rotation, ha="right",
+                 rotation_mode="anchor")
 
         # Turn spines off and create white grid.
         for edge, spine in ax.spines.items():
@@ -554,7 +557,7 @@ def make_heatmap(data,
 
         ax.set_xticks(np.arange(data.shape[1]+1)-.5, minor=True)
         ax.set_yticks(np.arange(data.shape[0]+1)-.5, minor=True)
-        ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
+        ax.grid(which="minor", color="w", linestyle='-', linewidth=2)
         ax.tick_params(which="minor", bottom=False, left=False)
 
     if xlabel:
