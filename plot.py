@@ -29,7 +29,8 @@ from . import stats
 
 #matplotlib.rc('text', usetex = True)
 #plt.style.use(hep.style.ATLAS)
-plt.style.use([hep.style.CMS, hep.style.firamath])
+#plt.style.use([hep.style.CMS, hep.style.firamath])
+plt.style.use(hep.style.CMS)
 plt.style.use([{
     'xaxis.labellocation': 'center',
     'yaxis.labellocation': 'center',
@@ -233,7 +234,7 @@ def hist1d(bins,
                 )
 
     if signal_colors is None:
-        signal_colors = ['orange', 'cyan', 'lime', 'magenta']
+        signal_colors = ['orange', 'cyan', 'lime', 'magenta', 'pink', 'gold', 'crimson', 'darkviolet']
 
     ## plot signals
     n_signals = 0
@@ -289,8 +290,40 @@ def hist1d(bins,
             )
 
     ## axis limits
+    if xlim is None:
+        xlim = (bins[0], bins[-1])
     if xlim is not None:
         ax1.set_xlim(*xlim)
+
+    if ylim is None:
+        x1, x2 = ax1.get_xlim()
+        bin1 = int(np.where(bins==x1)[0]) # bins.index(x1)
+        bin2 = int(np.where(bins==x2)[0]) # bins.index(x2)
+        if (ytotal is not None) and (data is not None):
+            assert len(bins) == len(ytotal) + 1
+            assert len(bins) == len(data) + 1
+            y_min = min([min(ytotal[bin1:bin2]), min(data[bin1:bin2])])
+            y_max = max([max(ytotal[bin1:bin2]), max(data[bin1:bin2])])
+            ylim = (y_min, y_max)
+        elif ytotal is not None:
+            y_min = min(ytotal[bin1:bin2])
+            y_max = max(ytotal[bin1:bin2])
+            ylim = (y_min, y_max)
+        elif data is not None:
+            y_min = min(data[bin1:bin2])
+            y_max = max(data[bin1:bin2])
+            ylim = (y_min, y_max)
+
+        if ylim is not None:
+            y_min, y_max = ylim
+            if yscale == 'log':
+                y_max = y_max * 2.0
+                y_min = y_min / 3.0
+            else:
+                y_max = y_max * 1.15
+                y_min = 0.0
+            ylim = (y_min, y_max)
+
     if ylim is not None:
         ax1.set_ylim(*ylim)
 
@@ -363,13 +396,12 @@ def hist1d(bins,
         if ytotal is not None:
             sum_ytotal = sum(ytotal)
             total_mean = sum([y_i*x_i/sum_ytotal for y_i, x_i in zip(ytotal, bincenters)])
-            print('DEBUG: ytotal total_mean = ', total_mean, flush=True)
         elif data is not None:
             sum_data = sum(data)
             total_mean = sum([y_i*x_i/sum_data for y_i, x_i in zip(data, bincenters)])
-            print('DEBUG: data total_mean = ', total_mean, flush=True)
 
-        middle_of_range = (bins[-1] - bins[0])/2
+        x1, x2 = ax1.get_xlim()
+        middle_of_range = (x1 + x2)/2
 
         leg_loc = 'upper left'
         if total_mean < middle_of_range:
@@ -544,12 +576,12 @@ def make_heatmap(data,
     if xlabels:
         # Let the horizontal axes labeling appear on top.
         ax.tick_params(top=True, bottom=False,
-                   labeltop=True, labelbottom=False)
+                       labeltop=True, labelbottom=False)
 
         # Rotate the tick labels and set their alignment. (-45)
         if xlabels_rotation:
             plt.setp(ax.get_xticklabels(), rotation=xlabels_rotation, ha="right",
-                 rotation_mode="anchor")
+                     rotation_mode="anchor")
 
         # Turn spines off and create white grid.
         for edge, spine in ax.spines.items():
@@ -567,14 +599,14 @@ def make_heatmap(data,
         ax.set_ylabel(ylabel, fontsize=16)
 
     if annotate:
-        texts = annotate_heatmap(im, data, valfmt="{x:.0f}", fontsize=14, threshold=threshold)
+        texts = annotate_heatmap(im, data, valfmt="{x:.0f}", fontsize=14,
+                                 threshold=threshold)
 
     ax.tick_params(axis=u'both', which=u'both', length=0)
     
     fig.tight_layout()
     
     return fig, ax
-
 
 
 def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
@@ -633,36 +665,102 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
     return texts
 
 
-def brazil(x, exp, obs,
-                xlabel=None,
-                ylabel=None,
-                xlim=None,
-                ylim=None,
-                yline=None,
-                ):
+def brazil(x,
+           exp=None,
+           obs=None,
+           xlabel=None,
+           ylabel=None,
+           xlim=None,
+           ylim=None,
+           yline=None,
+           yline_label=None,
+           yscale=None,
+           fillstyle='brazil',
+           ):
     """
     Plot a series of hypothesis tests for various POI values.
-
-    def plot_results(ax, mutests, tests, test_size=0.05):
-        cls_obs = np.array([test[0] for test in tests]).flatten()
-        cls_exp = [np.array([test[1][i] for test in tests]).flatten() for i in range(5)]
     """
+    n_x = len(x)
     fig, ax = plt.subplots()
-    for idx, color in zip(range(5), 5 * ['black']):
-        ax.plot(
-            x, exp[idx], c=color, linestyle='dotted' if idx != 2 else 'dashed'
-        )
-    ax.fill_between(x, exp[0], exp[-1], facecolor='yellow')
-    ax.fill_between(x, exp[1], exp[-2], facecolor='green')
-    ax.plot(x, obs, c='black')
-    if yline is not None:
-        ax.plot(x, [yline] * len(x), c='red')
+
+    if fillstyle == 'brazil':
+        facecolor_inner = 'green'
+        facecolor_outer = 'yellow'
+    elif fillstyle == 'gray':
+        facecolor_inner = 'lightgray'
+        facecolor_outer = 'whitesmoke'
+    elif fillstyle == 'bluegray':
+        facecolor_inner = 'lightskyblue'
+        facecolor_outer = 'lightgray'
+    elif fillstyle == 'blue':
+        facecolor_inner = 'lightskyblue'
+        facecolor_outer = 'whitesmoke'
+    else:
+        assert False, fillstyle
+
+    if exp is not None:
+        if isinstance(exp[0], list):
+            n_band = len(exp[0])
+            # transpose exp from (n_x, n_band) to (n_band, n_x)
+            _exp = [[exp[j][i] for j in range(n_x)] for i in range(n_band)]
+            if n_band == 5:
+                ax.fill_between(x, _exp[0], _exp[4], facecolor=facecolor_outer)
+                ax.fill_between(x, _exp[1], _exp[3], facecolor=facecolor_inner)
+                ax.plot(x, _exp[2], color='black', linestyle='dashed')
+                ax.plot(x, _exp[0], color='black', linestyle='dotted')
+                ax.plot(x, _exp[1], color='black', linestyle='dotted')
+                ax.plot(x, _exp[3], color='black', linestyle='dotted')
+                ax.plot(x, _exp[4], color='black', linestyle='dotted')
+
+            elif n_band == 3:
+                ax.fill_between(x, _exp[0], _exp[2], facecolor=facecolor_inner)
+                ax.plot(x, _exp[1], color='black', linestyle='dashed')
+            else:
+                assert False, n_band
+        else:
+            ax.plot(x, exp, color='black', linestyle='dashed')
+
+    if obs is not None:
+        if isinstance(obs[0], list):
+            n_band = len(obs[0])
+            assert n_band == 3
+            # transpose exp from (n_x, n_band) to (n_band, n_x)
+            _obs = [[obs[j][i] for j in range(n_x)] for i in range(n_band)]
+            ax.fill_between(x, _obs[0], _obs[2], facecolor=facecolor_inner)
+            ax.plot(x, _obs[1], color='black', linestyle='solid')
+        else:
+            ax.plot(x, obs, color='black', linestyle='solid')
+
+    if not xlim is False:
+        xlim = (x[0], x[-1])
     if xlim is not None:
         ax.set_xlim(*xlim)
     if ylim is not None:
         ax.set_ylim(*ylim)
+    if yscale:
+        ax.set_yscale('log')
     if xlabel is not None:
         ax.set_xlabel(xlabel)
     if ylabel is not None:
         ax.set_ylabel(ylabel)
+
+    if yline is not None:
+        if not isinstance(yline, list):
+            ylines = [yline]
+        else:
+            ylines = yline
+        for _y in ylines:
+            ax.plot(x, [_y] * len(x), color='red', linestyle='dashed')
+    if yline_label is not None:
+        assert yline
+        if not isinstance(yline_label, list):
+            yline_labels = [yline_label]
+        else:
+            yline_labels = yline_label
+        for _y, _l in zip(ylines, yline_labels):
+            _xlim = ax.get_xlim()
+            plt.text(xlim[1]+0.01*(xlim[1]-xlim[0]), _y, _l,
+                     color='red',
+                     fontsize='x-small')
+
     return fig, ax
