@@ -14,7 +14,6 @@ TODOs:
 """
 
 
-import math
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -273,7 +272,7 @@ def hist1d(bins,
                 [w/2 for w in binwidths],
             ]
         xerr = np.asarray(xerr)
-        uncert_boxes = make_error_boxes(ax1, bincenters, ytotal, xerr, yerr,
+        make_error_boxes(ax1, bincenters, ytotal, xerr, yerr,
                                         hatch='///')
 
     ## plot data
@@ -407,7 +406,7 @@ def hist1d(bins,
         if total_mean < middle_of_range:
             leg_loc = 'upper right'
 
-        leg = plt.legend(leg_handles, leg_labels, loc=leg_loc)
+        plt.legend(leg_handles, leg_labels, loc=leg_loc)
     
     ## make ratio
     if (data is not None) and ratio:
@@ -599,7 +598,7 @@ def make_heatmap(data,
         ax.set_ylabel(ylabel, fontsize=16)
 
     if annotate:
-        texts = annotate_heatmap(im, data, valfmt="{x:.0f}", fontsize=14,
+        annotate_heatmap(im, data, valfmt="{x:.0f}", fontsize=14,
                                  threshold=threshold)
 
     ax.tick_params(axis=u'both', which=u'both', length=0)
@@ -758,7 +757,7 @@ def brazil(x,
         else:
             yline_labels = yline_label
         for _y, _l in zip(ylines, yline_labels):
-            _xlim = ax.get_xlim()
+            _ = ax.get_xlim()
             plt.text(xlim[1]+0.01*(xlim[1]-xlim[0]), _y, _l,
                      color='red',
                      fontsize='x-small')

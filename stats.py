@@ -226,7 +226,7 @@ def twice_nll_mu_scan(pdf,
                                                par_bounds=par_bounds,
                                                return_fitted_val=True,
                                               )
-    mu_mle = params_mle[pdf.config.poi_index]
+    # mu_mle = params_mle[pdf.config.poi_index]  # noqa: F841
     
     if mu_bounds is None:
         mu_bounds = par_bounds[pdf.config.poi_index]
