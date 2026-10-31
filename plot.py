@@ -296,8 +296,8 @@ def hist1d(bins,
 
     if ylim is None:
         x1, x2 = ax1.get_xlim()
-        bin1 = int(np.where(bins==x1)[0]) # bins.index(x1)
-        bin2 = int(np.where(bins==x2)[0]) # bins.index(x2)
+        bin1 = int(np.where(bins==x1)[0][0]) # bins.index(x1)
+        bin2 = int(np.where(bins==x2)[0][0]) # bins.index(x2)
         if (ytotal is not None) and (data is not None):
             assert len(bins) == len(ytotal) + 1
             assert len(bins) == len(data) + 1
