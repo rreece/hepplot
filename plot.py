@@ -657,7 +657,9 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
         for j in range(data.shape[1]):
             _n = im.norm(data[i, j])
 #            kw.update(color=textcolors[_n > threshold and _n < 0.95]) # HACK
-            kw.update(color=textcolors[_n >= threshold])
+            # int(): the comparison is a numpy.bool, which NumPy 2.3 no longer
+            # accepts as a list index.
+            kw.update(color=textcolors[int(_n >= threshold)])
             text = im.axes.text(j+shift, i+shift, valfmt(int(round(data[i, j])), None), **kw) # HACK
             texts.append(text)
 
